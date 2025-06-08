@@ -205,8 +205,21 @@ def main():
                 running = False
 
         keys = pygame.key.get_pressed()
-        dx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
-        dy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
+        dx = 0
+        dy = 0
+        if keys[pygame.K_UP]:
+            dx -= 1
+            dy -= 1
+        if keys[pygame.K_DOWN]:
+            dx += 1
+            dy += 1
+        if keys[pygame.K_LEFT]:
+            dx -= 1
+            dy += 1
+        if keys[pygame.K_RIGHT]:
+            dx += 1
+            dy -= 1
+
         player.update(dx, dy, dt, blocked)
 
         screen.fill((0, 0, 0))
