@@ -84,17 +84,25 @@ class TileRenderer:
 
 class Player:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x = float(x)
+        self.y = float(y)
         self.frames = create_player_frames()
         self.frame = 0
+        self.anim_time = 0.0
 
-    def move(self, dx, dy):
+    def update(self, dx, dy, dt):
+        """Move the player smoothly and advance animation when walking."""
+        speed = 3.0  # tiles per second
+        move = speed * dt
         old_x, old_y = self.x, self.y
-        self.x = max(0, min(MAP_WIDTH - 1, self.x + dx))
-        self.y = max(0, min(MAP_HEIGHT - 1, self.y + dy))
-        if (self.x, self.y) != (old_x, old_y):
-            self.frame = (self.frame + 1) % len(self.frames)
+        self.x = max(0, min(MAP_WIDTH - 1, self.x + dx * move))
+        self.y = max(0, min(MAP_HEIGHT - 1, self.y + dy * move))
+
+        if dx or dy:
+            self.anim_time += dt
+            if self.anim_time >= 0.15:
+                self.anim_time = 0.0
+                self.frame = (self.frame + 1) % len(self.frames)
 
     def draw(self, screen, origin):
         sx = (self.x - self.y) * (TILE_WIDTH // 2) + origin[0] - PLAYER_WIDTH // 2
@@ -115,28 +123,20 @@ def main():
 
     running = True
     while running:
+        dt = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
         keys = pygame.key.get_pressed()
-        dx = dy = 0
-        if keys[pygame.K_UP]:
-            dy = -1
-        elif keys[pygame.K_DOWN]:
-            dy = 1
-        if keys[pygame.K_LEFT]:
-            dx = -1
-        elif keys[pygame.K_RIGHT]:
-            dx = 1
-        if dx or dy:
-            player.move(dx, dy)
+        dx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
+        dy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
+        player.update(dx, dy, dt)
 
         screen.fill((0, 0, 0))
         renderer.draw_map(grid)
         player.draw(screen, origin)
         pygame.display.flip()
-        clock.tick(60)
 
     pygame.quit()
 
