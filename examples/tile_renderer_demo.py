@@ -41,12 +41,16 @@ def create_obstacle_surfaces():
 
 
 def random_obstacles(surfaces, count=12):
-    """Create a list of obstacles and a set of blocked tiles."""
+    """Create a list of obstacles and a set of blocked tiles.
+
+    Obstacles are kept away from the map edges so they never appear to
+    spill outside the board when drawn.
+    """
     obstacles = []
     blocked = set()
     while len(obstacles) < count:
-        x = random.randint(0, MAP_WIDTH - 1)
-        y = random.randint(0, MAP_HEIGHT - 1)
+        x = random.randint(1, MAP_WIDTH - 2)
+        y = random.randint(1, MAP_HEIGHT - 2)
         if (x, y) in blocked or (x == MAP_WIDTH // 2 and y == MAP_HEIGHT // 2):
             continue
         kind = random.choice(list(surfaces.keys()))
@@ -160,12 +164,15 @@ class Player:
         new_x = self.x + self.vx * dt
         new_y = self.y + self.vy * dt
 
-        if (round(new_x), round(self.y)) not in blocked:
+        target_x = round(new_x)
+        target_y = round(new_y)
+
+        if 0 <= target_x < MAP_WIDTH and (target_x, round(self.y)) not in blocked:
             self.x = new_x
         else:
             self.vx = 0.0
 
-        if (round(self.x), round(new_y)) not in blocked:
+        if 0 <= target_y < MAP_HEIGHT and (round(self.x), target_y) not in blocked:
             self.y = new_y
         else:
             self.vy = 0.0
