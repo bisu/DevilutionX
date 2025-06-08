@@ -21,6 +21,38 @@ TILE_COLORS = [
 ]
 
 
+def create_obstacle_surfaces():
+    """Return surfaces for tree and rock obstacles."""
+    surfaces = {}
+    # Tree: trunk with green canopy
+    tree = pygame.Surface((32, 48), pygame.SRCALPHA)
+    pygame.draw.rect(tree, (100, 60, 20), (14, 28, 4, 12))
+    pygame.draw.circle(tree, (30, 140, 30), (16, 20), 12)
+    surfaces["tree"] = tree
+
+    # Rock: small gray boulder
+    rock = pygame.Surface((32, 24), pygame.SRCALPHA)
+    pygame.draw.polygon(rock, (120, 120, 120), [(4, 20), (16, 4), (28, 20)])
+    pygame.draw.polygon(rock, (160, 160, 160), [(6, 18), (16, 8), (26, 18)])
+    surfaces["rock"] = rock
+    return surfaces
+
+
+def random_obstacles(surfaces, count=12):
+    """Create a list of obstacles and a set of blocked tiles."""
+    obstacles = []
+    blocked = set()
+    while len(obstacles) < count:
+        x = random.randint(0, MAP_WIDTH - 1)
+        y = random.randint(0, MAP_HEIGHT - 1)
+        if (x, y) in blocked or (x == MAP_WIDTH // 2 and y == MAP_HEIGHT // 2):
+            continue
+        kind = random.choice(list(surfaces.keys()))
+        obstacles.append({"x": x, "y": y, "kind": kind})
+        blocked.add((x, y))
+    return obstacles, blocked
+
+
 def create_tile_surfaces():
     """Return a surface for each tile color shaped as an isometric diamond."""
     tiles = []
@@ -81,6 +113,13 @@ class TileRenderer:
                 sy = (x + y) * (TILE_HEIGHT // 2) + self.origin_y
                 self.screen.blit(self.tiles[tile], (sx, sy))
 
+    def draw_obstacles(self, obstacles, surfaces):
+        for ob in obstacles:
+            surf = surfaces[ob["kind"]]
+            sx = (ob["x"] - ob["y"]) * (TILE_WIDTH // 2) + self.origin_x - surf.get_width() // 2
+            sy = (ob["x"] + ob["y"]) * (TILE_HEIGHT // 2) + self.origin_y - surf.get_height()
+            self.screen.blit(surf, (sx, sy))
+
 
 class Player:
     def __init__(self, x, y):
@@ -92,8 +131,8 @@ class Player:
         self.frame = 0
         self.anim_time = 0.0
 
-    def update(self, dx, dy, dt):
-        """Move the player smoothly and advance animation when walking."""
+    def update(self, dx, dy, dt, blocked):
+        """Move the player smoothly with basic collision handling."""
         speed = 2.0  # tiles per second (slower movement)
 
         target_vx = dx * speed
@@ -102,8 +141,19 @@ class Player:
         self.vx += (target_vx - self.vx) * smooth
         self.vy += (target_vy - self.vy) * smooth
 
-        self.x += self.vx * dt
-        self.y += self.vy * dt
+        new_x = self.x + self.vx * dt
+        new_y = self.y + self.vy * dt
+
+        if (round(new_x), round(self.y)) not in blocked:
+            self.x = new_x
+        else:
+            self.vx = 0.0
+
+        if (round(self.x), round(new_y)) not in blocked:
+            self.y = new_y
+        else:
+            self.vy = 0.0
+
         self.x = max(0, min(MAP_WIDTH - 1, self.x))
         self.y = max(0, min(MAP_HEIGHT - 1, self.y))
 
@@ -125,7 +175,9 @@ def main():
     clock = pygame.time.Clock()
 
     tiles = create_tile_surfaces()
+    obstacle_surfaces = create_obstacle_surfaces()
     grid = random_map()
+    obstacles, blocked = random_obstacles(obstacle_surfaces)
     origin = (400, 100)
     renderer = TileRenderer(screen, tiles, origin=origin)
     player = Player(MAP_WIDTH // 2, MAP_HEIGHT // 2)
@@ -140,10 +192,11 @@ def main():
         keys = pygame.key.get_pressed()
         dx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
         dy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
-        player.update(dx, dy, dt)
+        player.update(dx, dy, dt, blocked)
 
         screen.fill((0, 0, 0))
         renderer.draw_map(grid)
+        renderer.draw_obstacles(obstacles, obstacle_surfaces)
         player.draw(screen, origin)
         pygame.display.flip()
 
