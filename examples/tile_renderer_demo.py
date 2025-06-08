@@ -113,12 +113,27 @@ class TileRenderer:
                 sy = (x + y) * (TILE_HEIGHT // 2) + self.origin_y
                 self.screen.blit(self.tiles[tile], (sx, sy))
 
-    def draw_obstacles(self, obstacles, surfaces):
+    def draw_objects(self, player, obstacles, surfaces):
+        """Draw the player together with obstacles with correct occlusion."""
+        objects = [{"x": player.x, "y": player.y, "kind": "player"}]
         for ob in obstacles:
-            surf = surfaces[ob["kind"]]
-            sx = (ob["x"] - ob["y"]) * (TILE_WIDTH // 2) + self.origin_x - surf.get_width() // 2
-            sy = (ob["x"] + ob["y"]) * (TILE_HEIGHT // 2) + self.origin_y - surf.get_height()
-            self.screen.blit(surf, (sx, sy))
+            objects.append({"x": ob["x"], "y": ob["y"], "kind": ob["kind"]})
+
+        objects.sort(key=lambda o: o["x"] + o["y"])
+
+        for obj in objects:
+            sx = (obj["x"] - obj["y"]) * (TILE_WIDTH // 2) + self.origin_x
+            sy = (obj["x"] + obj["y"]) * (TILE_HEIGHT // 2) + self.origin_y
+
+            if obj["kind"] == "player":
+                sx -= PLAYER_WIDTH // 2
+                sy -= PLAYER_HEIGHT
+                self.screen.blit(player.frames[player.frame], (sx, sy))
+            else:
+                surf = surfaces[obj["kind"]]
+                sx -= surf.get_width() // 2
+                sy -= surf.get_height()
+                self.screen.blit(surf, (sx, sy))
 
 
 class Player:
@@ -196,8 +211,7 @@ def main():
 
         screen.fill((0, 0, 0))
         renderer.draw_map(grid)
-        renderer.draw_obstacles(obstacles, obstacle_surfaces)
-        player.draw(screen, origin)
+        renderer.draw_objects(player, obstacles, obstacle_surfaces)
         pygame.display.flip()
 
     pygame.quit()
