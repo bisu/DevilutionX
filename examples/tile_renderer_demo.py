@@ -8,8 +8,9 @@ TILE_HEIGHT = 32
 MAP_WIDTH = 10
 MAP_HEIGHT = 10
 
-# Simple player sprite size
-PLAYER_RADIUS = 12
+# Player sprite size
+PLAYER_WIDTH = 28
+PLAYER_HEIGHT = 40
 
 # Colors for a few tile types
 TILE_COLORS = [
@@ -41,6 +42,32 @@ def random_map():
     return [[random.randrange(len(TILE_COLORS)) for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
 
 
+def create_player_frames():
+    """Create a very simple male character with two walking frames."""
+    skin_color = (210, 160, 120)
+    shirt_color = random.choice([(40, 80, 180), (180, 60, 60), (60, 140, 60)])
+    pants_color = random.choice([(30, 30, 100), (50, 50, 50), (20, 60, 120)])
+
+    frames = []
+    for step in range(2):
+        surf = pygame.Surface((PLAYER_WIDTH, PLAYER_HEIGHT), pygame.SRCALPHA)
+        head_center = (PLAYER_WIDTH // 2, 6)
+        pygame.draw.circle(surf, skin_color, head_center, 5)
+        pygame.draw.rect(surf, shirt_color, (PLAYER_WIDTH // 2 - 4, 12, 8, 10))
+        arm_y = 14
+        pygame.draw.rect(surf, shirt_color, (PLAYER_WIDTH // 2 - 8, arm_y, 4, 8))
+        pygame.draw.rect(surf, shirt_color, (PLAYER_WIDTH // 2 + 4, arm_y, 4, 8))
+        leg_y = 22
+        if step == 0:
+            pygame.draw.rect(surf, pants_color, (PLAYER_WIDTH // 2 - 5, leg_y, 4, 12))
+            pygame.draw.rect(surf, pants_color, (PLAYER_WIDTH // 2 + 1, leg_y, 4, 12))
+        else:
+            pygame.draw.rect(surf, pants_color, (PLAYER_WIDTH // 2 - 6, leg_y, 4, 12))
+            pygame.draw.rect(surf, pants_color, (PLAYER_WIDTH // 2 + 2, leg_y, 4, 12))
+        frames.append(surf)
+    return frames
+
+
 class TileRenderer:
     def __init__(self, screen, tiles, origin):
         self.screen = screen
@@ -59,18 +86,20 @@ class Player:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        size = PLAYER_RADIUS * 2
-        self.surface = pygame.Surface((size, size), pygame.SRCALPHA)
-        pygame.draw.circle(self.surface, (255, 50, 50), (PLAYER_RADIUS, PLAYER_RADIUS), PLAYER_RADIUS)
+        self.frames = create_player_frames()
+        self.frame = 0
 
     def move(self, dx, dy):
+        old_x, old_y = self.x, self.y
         self.x = max(0, min(MAP_WIDTH - 1, self.x + dx))
         self.y = max(0, min(MAP_HEIGHT - 1, self.y + dy))
+        if (self.x, self.y) != (old_x, old_y):
+            self.frame = (self.frame + 1) % len(self.frames)
 
     def draw(self, screen, origin):
-        sx = (self.x - self.y) * (TILE_WIDTH // 2) + origin[0]
-        sy = (self.x + self.y) * (TILE_HEIGHT // 2) + origin[1] - PLAYER_RADIUS
-        screen.blit(self.surface, (sx, sy))
+        sx = (self.x - self.y) * (TILE_WIDTH // 2) + origin[0] - PLAYER_WIDTH // 2
+        sy = (self.x + self.y) * (TILE_HEIGHT // 2) + origin[1] - PLAYER_HEIGHT
+        screen.blit(self.frames[self.frame], (sx, sy))
 
 
 def main():
@@ -89,15 +118,19 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    player.move(0, -1)
-                elif event.key == pygame.K_DOWN:
-                    player.move(0, 1)
-                elif event.key == pygame.K_LEFT:
-                    player.move(-1, 0)
-                elif event.key == pygame.K_RIGHT:
-                    player.move(1, 0)
+
+        keys = pygame.key.get_pressed()
+        dx = dy = 0
+        if keys[pygame.K_UP]:
+            dy = -1
+        elif keys[pygame.K_DOWN]:
+            dy = 1
+        if keys[pygame.K_LEFT]:
+            dx = -1
+        elif keys[pygame.K_RIGHT]:
+            dx = 1
+        if dx or dy:
+            player.move(dx, dy)
 
         screen.fill((0, 0, 0))
         renderer.draw_map(grid)
