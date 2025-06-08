@@ -148,14 +148,13 @@ class Player:
         self.anim_time = 0.0
 
     def update(self, dx, dy, dt, blocked):
-        """Move the player smoothly with basic collision handling."""
-        speed = 2.0  # tiles per second (slower movement)
+        """Move the player with basic collision handling."""
+        speed = 2.0  # tiles per second
 
-        target_vx = dx * speed
-        target_vy = dy * speed
-        smooth = min(1.0, 10.0 * dt)
-        self.vx += (target_vx - self.vx) * smooth
-        self.vy += (target_vy - self.vy) * smooth
+        # Apply velocity directly so movement is responsive and all
+        # tiles remain reachable even near the map edges.
+        self.vx = dx * speed
+        self.vy = dy * speed
 
         new_x = self.x + self.vx * dt
         new_y = self.y + self.vy * dt
@@ -206,24 +205,19 @@ def main():
                 running = False
 
         keys = pygame.key.get_pressed()
-        sx = 0
-        sy = 0
-        if keys[pygame.K_UP]:
-            sy -= 1
-        if keys[pygame.K_DOWN]:
-            sy += 1
-        if keys[pygame.K_LEFT]:
-            sx -= 1
-        if keys[pygame.K_RIGHT]:
-            sx += 1
+        sx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
+        sy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
 
-        if sx != 0 or sy != 0:
-            length = math.hypot(sx, sy)
-            sx /= length
-            sy /= length
-
+        # Convert the screen direction to board space. Rightward motion on
+        # screen corresponds to increasing the board X while decreasing Y.
         dx = (sx + sy) / 2
         dy = (sy - sx) / 2
+
+        # Normalize so diagonal movement isn't faster than cardinal.
+        if dx != 0 or dy != 0:
+            length = math.hypot(dx, dy)
+            dx /= length
+            dy /= length
 
         player.update(dx, dy, dt, blocked)
 
