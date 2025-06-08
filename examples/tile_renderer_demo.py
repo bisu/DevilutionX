@@ -3,6 +3,7 @@
 import pygame
 import random
 import math
+import os
 
 TILE_WIDTH = 64
 TILE_HEIGHT = 32
@@ -189,6 +190,9 @@ def main():
     screen = pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
 
+    headless = os.environ.get("SDL_VIDEODRIVER") == "dummy"
+    elapsed = 0.0
+
     tiles = create_tile_surfaces()
     obstacle_surfaces = create_obstacle_surfaces()
     grid = random_map()
@@ -200,6 +204,9 @@ def main():
     running = True
     while running:
         dt = clock.tick(60) / 1000.0
+        elapsed += dt
+        if headless and elapsed >= 2.0:
+            break
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False

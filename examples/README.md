@@ -19,4 +19,7 @@ Then run the script:
 python3 examples/tile_renderer_demo.py
 ```
 
+When testing in a headless environment set `SDL_VIDEODRIVER=dummy`. The demo
+detects this and quits automatically after a couple of seconds.
+
 
