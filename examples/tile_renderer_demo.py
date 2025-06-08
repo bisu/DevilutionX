@@ -2,6 +2,7 @@
 
 import pygame
 import random
+import math
 
 TILE_WIDTH = 64
 TILE_HEIGHT = 32
@@ -205,20 +206,24 @@ def main():
                 running = False
 
         keys = pygame.key.get_pressed()
-        dx = 0
-        dy = 0
+        sx = 0
+        sy = 0
         if keys[pygame.K_UP]:
-            dx -= 1
-            dy -= 1
+            sy -= 1
         if keys[pygame.K_DOWN]:
-            dx += 1
-            dy += 1
+            sy += 1
         if keys[pygame.K_LEFT]:
-            dx -= 1
-            dy += 1
+            sx -= 1
         if keys[pygame.K_RIGHT]:
-            dx += 1
-            dy -= 1
+            sx += 1
+
+        if sx != 0 or sy != 0:
+            length = math.hypot(sx, sy)
+            sx /= length
+            sy /= length
+
+        dx = (sx + sy) / 2
+        dy = (sy - sx) / 2
 
         player.update(dx, dy, dt, blocked)
 
