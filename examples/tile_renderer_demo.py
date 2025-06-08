@@ -86,21 +86,30 @@ class Player:
     def __init__(self, x, y):
         self.x = float(x)
         self.y = float(y)
+        self.vx = 0.0
+        self.vy = 0.0
         self.frames = create_player_frames()
         self.frame = 0
         self.anim_time = 0.0
 
     def update(self, dx, dy, dt):
         """Move the player smoothly and advance animation when walking."""
-        speed = 3.0  # tiles per second
-        move = speed * dt
-        old_x, old_y = self.x, self.y
-        self.x = max(0, min(MAP_WIDTH - 1, self.x + dx * move))
-        self.y = max(0, min(MAP_HEIGHT - 1, self.y + dy * move))
+        speed = 2.0  # tiles per second (slower movement)
 
-        if dx or dy:
+        target_vx = dx * speed
+        target_vy = dy * speed
+        smooth = min(1.0, 10.0 * dt)
+        self.vx += (target_vx - self.vx) * smooth
+        self.vy += (target_vy - self.vy) * smooth
+
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.x = max(0, min(MAP_WIDTH - 1, self.x))
+        self.y = max(0, min(MAP_HEIGHT - 1, self.y))
+
+        if abs(self.vx) > 0.01 or abs(self.vy) > 0.01:
             self.anim_time += dt
-            if self.anim_time >= 0.15:
+            if self.anim_time >= 0.2:
                 self.anim_time = 0.0
                 self.frame = (self.frame + 1) % len(self.frames)
 
